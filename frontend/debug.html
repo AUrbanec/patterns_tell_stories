@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Podcast Mapper</title>
+</head>
+<body>
+    <h1>Debug Page</h1>
+    <div id="status">Loading...</div>
+    <div id="episodes"></div>
+    
+    <script>
+        console.log('Debug script starting...');
+        
+        async function testAPI() {
+            try {
+                console.log('Testing API connection...');
+                const response = await fetch('http://localhost:8000/api/episodes');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Episodes data:', data);
+                    document.getElementById('status').textContent = 'API connection successful!';
+                    document.getElementById('episodes').textContent = `Found ${data.length} episodes: ${JSON.stringify(data)}`;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('API test failed:', error);
+                document.getElementById('status').textContent = `API Error: ${error.message}`;
+            }
+        }
+        
+        // Test immediately
+        testAPI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Relationship Mapper</title>
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Podcast Relationship Mapper</h1>
+            <div class="controls">
+                <select id="episodeSelect">
+                    <option value="">Select an episode...</option>
+                </select>
+                <button id="loadGraphBtn">Load Graph</button>
+                <button id="uploadBtn">Upload New Episode</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="graph-container">
+                <div id="cy"></div>
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Loading graph data...</p>
+                </div>
+            </div>
+            
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-content">
+                    <h3>Entity Details</h3>
+                    <div id="entityDetails">
+                        <p>Click on a node to see details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Upload New Episode</h2>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="episodeTitle">Episode Title:</label>
+                    <input type="text" id="episodeTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="episodeUrl">Episode URL (optional):</label>
+                    <input type="url" id="episodeUrl">
+                </div>
+                <div class="form-group">
+                    <label for="audioFile">Audio File:</label>
+                    <input type="file" id="audioFile" accept="audio/*" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit">Upload and Process</button>
+                    <button type="button" id="cancelUpload">Cancel</button>
+                </div>
+            </form>
+            <div id="uploadProgress" class="hidden">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p id="progressText">Uploading...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

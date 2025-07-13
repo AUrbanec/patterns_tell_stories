@@ -1,0 +1,206 @@
+
+Original Prompt:
+I'd like your help planning a personal project MVP. There is a podcast that I listen to which does extremely in depth research and I'd like to make a webapp that uses Gemini Pro 2.5 LLM calls to analyze the audio of the podcast in chunks and extract information from those chunks to create a relationship map (like Maltego) between the various organizations, businesses, people, and events which are discussed, as well as the source material. 
+
+It needs to be extremely accurate at extracting the details. It should have a python backend and a simple frontend to display the map. It should use a sqlite db (will eventually transition to postgres). I plan on hosting the frontend on github pages. 
+
+The database needs to store all details for everything. The same people/organizations/businesses get discussed often, so there needs to a method to add more information, details, or relationships to an entity. I also want references to the specific episode and timestamp for the details being added.
+
+
+Outputted Plan
+Project Plan: Podcast Relationship Mapper MVP
+Phase 1: Database Schema Design (SQLite)
+This is the most critical step. A well-designed schema will make the rest of the project much easier. We need to think in terms of a graph: Nodes (Entities) and Edges (Relationships).
+Table 1: episodes
+Stores information about each podcast episode.
+id (INTEGER, PRIMARY KEY)
+title (TEXT, NOT NULL)
+episode_url (TEXT)
+processed_at (TIMESTAMP)
+status (TEXT) - e.g., 'pending', 'processing', 'complete'
+Table 2: entities
+The "nodes" of our graph. This is the master table for every person, place, organization, etc.
+id (INTEGER, PRIMARY KEY)
+name (TEXT, NOT NULL, UNIQUE) - The canonical name, e.g., "Andrija Puharich".
+type (TEXT, NOT NULL) - e.g., 'Person', 'Organization', 'Event', 'Source Material', 'Concept'.
+summary (TEXT) - A brief, auto-generated summary of the entity.
+Table 3: details
+Specific facts or attributes about an entity. An entity can have many details.
+id (INTEGER, PRIMARY KEY)
+entity_id (INTEGER, FOREIGN KEY to entities.id)
+detail_text (TEXT, NOT NULL) - e.g., "Died in 1995 from a fall down the stairs."
+source_id (INTEGER, FOREIGN KEY to sources.id)
+Table 4: relationships
+The "edges" of our graph, connecting two entities.
+id (INTEGER, PRIMARY KEY)
+source_entity_id (INTEGER, FOREIGN KEY to entities.id)
+target_entity_id (INTEGER, FOREIGN KEY to entities.id)
+description (TEXT, NOT NULL) - The nature of the link, e.g., "Founded", "Researched", "Was a colleague of", "Allegedly part of".
+source_id (INTEGER, FOREIGN KEY to sources.id)
+Table 5: sources
+This is crucial for your accuracy and referencing requirement.
+id (INTEGER, PRIMARY KEY)
+episode_id (INTEGER, FOREIGN KEY to episodes.id)
+timestamp_start (INTEGER) - Start time in seconds.
+timestamp_end (INTEGER) - End time in seconds.
+transcript_snippet (TEXT) - The raw text from that chunk.
+Phase 2: Backend Development (Python/Flask/FastAPI)
+The backend will handle audio processing, LLM interaction, and data persistence.
+Technology Stack:
+Framework: FastAPI is recommended. It's modern, fast, and has automatic API documentation, which is great for development.
+ORM: SQLAlchemy. It will make the eventual transition from SQLite to PostgreSQL seamless.
+Audio Handling: pydub is excellent for easily splitting audio files.
+LLM: google-generativeai Python SDK.
+MVP Workflow (The Ingestion Pipeline):
+Audio Ingestion: Create an endpoint that accepts an audio file (e.g., MP3) and an episode_id.
+Audio Splitting: Use pydub to chop the audio into 60-second chunks. This is vital for two reasons:
+It keeps the context window for the LLM focused.
+It provides the timestamp_start and timestamp_end for our sources table.
+Transcription & Analysis (The Core Loop): For each audio chunk:
+a. Transcribe: Use a speech-to-text model. For the MVP, you can manually use a transcription service and feed the text, but for automation, Gemini's own capabilities or another API would be needed.
+b. Prompt Gemini: This is the most important part. You will send the transcript of the chunk to the Gemini 2.5 Pro model with a carefully engineered prompt. The prompt should instruct the model to return a structured JSON object.
+Example Gemini Prompt:
+Generated code
+You are a meticulous research analyst building a knowledge graph. Analyze the following podcast transcript snippet. Extract all entities (people, organizations, events, concepts, source material) and the relationships between them.
+
+For each entity, provide its canonical name and type.
+For each relationship, describe the link between a source entity and a target entity.
+For each key detail about an entity, describe it.
+
+Return your findings ONLY as a JSON object with the following structure:
+{
+  "entities": [
+    {"name": "Entity Name", "type": "Person|Organization|Event|...", "summary": "A brief description."}
+  ],
+  "relationships": [
+    {"source": "Source Entity Name", "target": "Target Entity Name", "description": "Description of the relationship."}
+  ],
+  "details": [
+    {"entity": "Entity Name", "detail": "The specific detail about this entity."}
+  ]
+}
+
+Transcript:
+"""
+[Insert 60-second transcript chunk here]
+"""
+Use code with caution.
+Data Persistence:
+Parse the JSON response from Gemini.
+For each chunk, first create an entry in the sources table.
+Iterate through the entities in the JSON:
+Check if the entity name already exists in your entities table.
+If NOT, create it.
+If YES, you can choose to update its summary or leave it. This handles the recurring nature of entities.
+Iterate through details and relationships:
+Look up the IDs of the entities involved.
+Create the new rows in the details and relationships tables, linking them to the source_id you created for the chunk.
+API Endpoint for Frontend:
+Create a single endpoint, e.g., /api/graph_data/{episode_id}.
+This endpoint will query your database and return all the entities and relationships for that episode in a format your frontend visualization library can understand (typically a list of nodes and a list of edges).
+Phase 3: Frontend Development (Simple Web Interface)
+Since you're hosting on GitHub Pages, this must be a static site (HTML, CSS, JavaScript).
+Technology Stack:
+Framework: None needed for the MVP. Vanilla JavaScript is fine.
+Visualization Library: Cytoscape.js is highly recommended. It is designed specifically for network/graph visualization, is highly performant, and has great documentation. Vis.js is another good alternative.
+MVP Workflow:
+HTML: A simple index.html with a <div> element to hold the graph.
+JavaScript:
+On page load, use the fetch API to call your backend's /api/graph_data/{episode_id} endpoint.
+Parse the JSON response from your backend.
+Format the data into the structure required by Cytoscape.js (e.g., elements: [{ data: { id: 'puharich', label: 'Andrija Puharich' } }, { data: { id: 'sri', label: 'SRI' } }, { data: { source: 'puharich', target: 'sri', label: 'Researched at' } }]).
+Initialize Cytoscape with this data.
+Interactivity:
+Add a click listener to the nodes.
+When a node is clicked, display its details in a sidebar. You can make another API call to get all details for that entity (/api/entity/{entity_id}/details) or include them in the initial graph data payload. Each detail should show the timestamp, which is a clickable link that could eventually play the audio from that specific point.
+
+
+Additional info about using Gemini API for audio processing:
+Gemini 2.5 Pro is a multimodal model, meaning it can natively understand and process various data types, including audio, without needing a separate transcription step.[1][2][3]
+Key Concepts for Audio Processing
+Multimodal Input: You can send audio data directly to the model as part of your prompt, combined with other instructions (like text or images).[4]
+Supported Formats: Gemini supports common audio formats like WAV, MP3, AAC, OGG, and FLAC.[5] The audio will be automatically downsampled to a 16 kbps mono channel for processing.[5]
+Files API: For larger audio files or when you intend to reuse the same audio in multiple prompts, it is more efficient to first upload the file using the Files API. For requests larger than 20 MB, using the Files API is mandatory.[6]
+Tokenization: Audio is tokenized for processing. Approximately 1 second of audio equates to 32 tokens. The maximum audio length per single prompt is 9.5 hours.[6]
+Proper Method: Python Code Example
+Here is a step-by-step guide and code structure for processing an audio file with Gemini 2.5 Pro to extract structured information.
+Step 1: Install the Google AI Python SDK
+First, ensure the necessary library is installed in your environment.
+Generated bash
+pip install google-generativeai
+Use code with caution.
+Bash
+Step 2: Configure Your API Key
+Set up your API key, which you can obtain from Google AI Studio.[4][7]```python
+import google.generativeai as genai
+import os
+It's best practice to store your API key as an environment variable
+and not hardcode it in your script.
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+Generated code
+**Step 3: Upload the Audio File (Recommended)**
+
+For a podcast episode, which will be a large file, using the Files API is the correct approach. This uploads the file and makes it available for the model to reference.
+
+```python
+# Path to your local audio file
+audio_file_path = "path/to/your/podcast_episode.mp3"
+
+# Upload the file to the Files API
+print(f"Uploading file: {audio_file_path}")
+audio_file = genai.upload_file(path=audio_file_path)
+
+# The 'audio_file' object now contains a reference that can be used in prompts.
+print(f"Completed upload: {audio_file.uri}")
+Use code with caution.
+Step 4: Construct the Prompt and Call the Model
+Now, you can create a multimodal prompt that includes the uploaded audio file and your specific instructions for analysis. The key is to provide a clear, structured prompt that tells the model exactly what to do.
+Generated python
+# 1. Select the Gemini 2.5 Pro model
+# Use the appropriate model name, e.g., 'gemini-2.5-pro'
+model = genai.GenerativeModel(model_name='gemini-2.5-pro')
+
+# 2. Define the instructional part of your prompt
+# This tells the model its role and the desired output format (JSON).
+prompt_parts = [
+    "You are a meticulous research analyst building a knowledge graph from a podcast.",
+    "Analyze the provided audio file. Extract all entities (people, organizations, events, concepts, source material) and the relationships between them.",
+    "Return your findings ONLY as a JSON object with the following structure:",
+    """
+    {
+      "entities": [
+        {"name": "Entity Name", "type": "Person|Organization|Event|...", "summary": "A brief description."}
+      ],
+      "relationships": [
+        {"source": "Source Entity Name", "target": "Target Entity Name", "description": "Description of the relationship."}
+      ],
+      "details": [
+        {"entity": "Entity Name", "detail": "The specific detail about this entity."}
+      ]
+    }
+    """,
+    # 3. Include the uploaded audio file as part of the prompt
+    audio_file
+]
+
+# 4. Generate the content
+# The model will process the audio and the text instructions together.
+print("Generating content from audio...")
+response = model.generate_content(prompt_parts)
+
+# 5. Access the response
+# The model's output will be in the 'text' attribute of the response part.
+print("--- Response ---")
+print(response.text)
+
+# You would then parse this JSON string to populate your database.
+import json
+try:
+    analysis_data = json.loads(response.text)
+    # ... proceed with database insertion logic ...
+except json.JSONDecodeError:
+    print("Error: Failed to decode JSON from the model's response.")
+Use code with caution.
+Python
+This method provides a robust and efficient way to leverage Gemini 2.5 Pro's native audio understanding capabilities for your project. By using the Files API, you handle large files correctly, and by providing a structured prompt, you guide the model to return the precise, machine-readable data your application requires.
+

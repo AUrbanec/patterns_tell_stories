@@ -76,15 +76,13 @@ class DataService:
         self.db.refresh(relationship)
         return relationship
     
-    def process_analysis_chunk(self, analysis_result: Dict[str, Any]):
-        """Process a single analysis result and store in database."""
-        episode_id = analysis_result["episode_id"]
-        timestamp_start = analysis_result["timestamp_start"]
-        timestamp_end = analysis_result["timestamp_end"]
-        analysis = analysis_result["analysis"]
-        
-        # Create source record
-        source = self.create_source(episode_id, timestamp_start, timestamp_end)
+    def process_refined_analysis(self, refined_analysis: Dict[str, Any]):
+        """Process the refined analysis result and store it in the database."""
+        episode_id = refined_analysis["episode_id"]
+        analysis = refined_analysis["analysis"]
+
+        # Create a single source for the entire episode
+        source = self.create_source(episode_id, timestamp_start=0, timestamp_end=-1)
         
         # Process entities
         entity_map = {}

@@ -98,34 +98,45 @@ class AudioProcessor:
             except OSError:
                 pass
     
-    def process_full_audio(self, audio_file_path: str, episode_id: int) -> List[Dict[str, Any]]:
+    def process_full_audio(self, audio_file_path: str, episode_id: int) -> Dict[str, Any]:
         """
-        Process a complete audio file by splitting into chunks and analyzing each.
-        Returns list of analysis results with timing information.
+        Process a complete audio file by splitting into chunks, analyzing each, and then refining the combined result.
+        Returns a single refined analysis result.
         """
+        from llm_processor import LLMProcessor
+
         chunk_files = self.split_audio_into_chunks(audio_file_path, chunk_duration_minutes=5)
-        results = []
+        chunk_results = []
         
         try:
             for i, chunk_file in enumerate(chunk_files):
-                start_time = i * 5 * 60  # 5 minutes in seconds
+                start_time = i * 5 * 60
                 end_time = (i + 1) * 5 * 60
                 
                 print(f"Processing chunk {i+1}/{len(chunk_files)} ({start_time}s - {end_time}s)")
                 
                 analysis = self.analyze_audio_chunk(chunk_file)
                 
-                # Add timing information
-                result = {
+                chunk_results.append({
                     "episode_id": episode_id,
                     "timestamp_start": start_time,
                     "timestamp_end": end_time,
                     "analysis": analysis
-                }
-                results.append(result)
+                })
+
+            # After processing all chunks, refine the combined results
+            if chunk_results:
+                print("Refining the relationship map with the LLMProcessor...")
+                llm_processor = LLMProcessor(gemini_api_key=os.getenv("GEMINI_API_KEY"))
+                refined_analysis = llm_processor.refine_relationship_map(chunk_results)
                 
+                # Return the refined analysis with episode_id
+                return {
+                    "episode_id": episode_id,
+                    "analysis": refined_analysis
+                }
+
         finally:
-            # Clean up temporary files
             self.cleanup_temp_files(chunk_files)
         
-        return results
+        return {"episode_id": episode_id, "analysis": {"entities": [], "relationships": [], "details": []}}

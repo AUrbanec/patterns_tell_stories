@@ -56,37 +56,29 @@ async def process_episode_audio(
     data_service = DataService(db)
     audio_processor = get_audio_processor()
     
-    # Update episode status to processing
     data_service.update_episode_status(episode_id, "processing")
     
     try:
-        # Save uploaded file to temporary location
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
             shutil.copyfileobj(audio_file.file, temp_file)
             temp_file_path = temp_file.name
         
         try:
-            # Process the audio file
-            analysis_results = audio_processor.process_full_audio(temp_file_path, episode_id)
+            refined_analysis = audio_processor.process_full_audio(temp_file_path, episode_id)
             
-            # Store results in database
-            for result in analysis_results:
-                data_service.process_analysis_chunk(result)
+            data_service.process_refined_analysis(refined_analysis)
             
-            # Update episode status to complete
             data_service.update_episode_status(episode_id, "complete")
             
             return {
-                "message": f"Successfully processed {len(analysis_results)} audio chunks",
-                "chunks_processed": len(analysis_results)
+                "message": "Successfully processed and refined the audio.",
+                "episode_id": episode_id
             }
             
         finally:
-            # Clean up temporary file
             os.unlink(temp_file_path)
             
     except Exception as e:
-        # Update episode status to failed
         data_service.update_episode_status(episode_id, "failed")
         raise HTTPException(status_code=500, detail=f"Error processing audio: {str(e)}")
 

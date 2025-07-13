@@ -79,11 +79,26 @@ class AudioProcessor:
             
             # Parse JSON response
             try:
-                analysis_data = json.loads(response.text)
+                # Clean up the response - remove markdown code blocks if present
+                response_text = response.text.strip()
+                if response_text.startswith('```json'):
+                    # Remove ```json from start and ``` from end
+                    response_text = response_text[7:]  # Remove ```json
+                    if response_text.endswith('```'):
+                        response_text = response_text[:-3]  # Remove ```
+                elif response_text.startswith('```'):
+                    # Remove ``` from start and end
+                    response_text = response_text[3:]
+                    if response_text.endswith('```'):
+                        response_text = response_text[:-3]
+                
+                response_text = response_text.strip()
+                analysis_data = json.loads(response_text)
+                print(f"Successfully parsed JSON with {len(analysis_data.get('entities', []))} entities")
                 return analysis_data
             except json.JSONDecodeError as e:
                 print(f"Error decoding JSON: {e}")
-                print(f"Raw response: {response.text}")
+                print(f"Raw response: {response.text[:500]}...")  # Show first 500 chars
                 return {"entities": [], "relationships": [], "details": []}
                 
         except Exception as e:

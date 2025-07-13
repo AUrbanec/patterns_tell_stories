@@ -83,8 +83,15 @@ class DataService:
         timestamp_end = analysis_result["timestamp_end"]
         analysis = analysis_result["analysis"]
         
-        # Create source record
-        source = self.create_source(episode_id, timestamp_start, timestamp_end)
+        # Debug: Print what we received
+        print(f"Processing chunk {timestamp_start}-{timestamp_end}s")
+        print(f"Entities found: {len(analysis.get('entities', []))}")
+        print(f"Relationships found: {len(analysis.get('relationships', []))}")
+        print(f"Details found: {len(analysis.get('details', []))}")
+        
+        # Create source record with analysis summary as transcript snippet
+        transcript_snippet = f"Analysis: {len(analysis.get('entities', []))} entities, {len(analysis.get('relationships', []))} relationships"
+        source = self.create_source(episode_id, timestamp_start, timestamp_end, transcript_snippet)
         
         # Process entities
         entity_map = {}

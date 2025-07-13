@@ -133,7 +133,8 @@ class PodcastMapper {
                         'label': 'data(label)',
                         'font-size': '10px',
                         'text-rotation': 'autorotate',
-                        'text-margin-y': -10
+                        'text-margin-y': -10,
+                        'text-valign': 'top'
                     }
                 },
                 {
@@ -146,10 +147,9 @@ class PodcastMapper {
             ],
             
             layout: {
-                name: 'cose',
-                idealEdgeLength: 100,
-                nodeOverlap: 20,
-                refresh: 20,
+                name: 'dagre',
+                padding: 30,
+                spacingFactor: 1.25,
                 fit: true,
                 padding: 30,
                 randomize: false,

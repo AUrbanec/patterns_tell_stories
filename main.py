@@ -69,16 +69,18 @@ async def process_episode_audio(
             # Process the audio file
             analysis_results = audio_processor.process_full_audio(temp_file_path, episode_id)
             
-            # Store results in database
-            for result in analysis_results:
-                data_service.process_analysis_chunk(result)
+            # Perform final refinement step
+            refined_analysis = audio_processor.refine_full_analysis(analysis_results)
+
+            # Store the single refined result in the database
+            data_service.process_refined_analysis(episode_id, refined_analysis)
             
             # Update episode status to complete
             data_service.update_episode_status(episode_id, "complete")
             
             return {
-                "message": f"Successfully processed {len(analysis_results)} audio chunks",
-                "chunks_processed": len(analysis_results)
+                "message": "Successfully processed and refined audio.",
+                "final_entities": len(refined_analysis.get("entities", []))
             }
             
         finally:

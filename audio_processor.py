@@ -144,3 +144,58 @@ class AudioProcessor:
             self.cleanup_temp_files(chunk_files)
         
         return results
+
+    def refine_full_analysis(self, all_chunk_analyses: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Perform a final analysis pass over the combined JSON from all chunks.
+        This refines entities and relationships, catching links across chunks.
+        """
+        print("Starting final refinement of combined analysis...")
+
+        # Combine all entities, relationships, and details into one structure
+        combined_json = {
+            "entities": [],
+            "relationships": [],
+            "details": []
+        }
+        for chunk in all_chunk_analyses:
+            analysis = chunk.get("analysis", {})
+            if analysis:
+                combined_json["entities"].extend(analysis.get("entities", []))
+                combined_json["relationships"].extend(analysis.get("relationships", []))
+                combined_json["details"].extend(analysis.get("details", []))
+
+        # Create a string representation of the combined JSON
+        full_analysis_json_str = json.dumps(combined_json, indent=2)
+
+        prompt_parts = [
+            "You are a data synthesis expert consolidating a knowledge graph from a podcast.",
+            "The following JSON object contains entities, relationships, and details extracted from sequential chunks of a single episode.",
+            "Your task is to refine this data into a single, cohesive knowledge graph.",
+            "Key objectives:",
+            "1. Merge duplicate entities, selecting the most descriptive summary.",
+            "2. Re-evaluate relationships based on the full context. Some relationships might be between entities found in different chunks.",
+            "3. Consolidate and summarize details for each entity.",
+            "4. Ensure final entity names are canonical and consistent.",
+            "Return ONLY a single, refined JSON object in the same structure as the input.",
+            f"Here is the combined data from all chunks:\n{full_analysis_json_str}"
+        ]
+
+        try:
+            response = self.model.generate_content(prompt_parts)
+
+            # Clean and parse the response
+            response_text = response.text.strip()
+            if response_text.startswith('```json'):
+                response_text = response_text[7:-3].strip()
+            elif response_text.startswith('```'):
+                response_text = response_text[3:-3].strip()
+
+            refined_data = json.loads(response_text)
+            print(f"Successfully refined analysis: {len(refined_data.get('entities', []))} final entities.")
+            return refined_data
+
+        except Exception as e:
+            print(f"Error during refinement process: {e}")
+            # Return the original combined data as a fallback
+            return json.loads(full_analysis_json_str)

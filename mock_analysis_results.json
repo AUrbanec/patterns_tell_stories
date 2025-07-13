@@ -1,0 +1,50 @@
+[
+  {
+    "episode_id": 1,
+    "timestamp_start": 0,
+    "timestamp_end": 300,
+    "analysis": {
+      "entities": [
+        {
+          "name": "John Doe",
+          "type": "Person",
+          "summary": "A software engineer."
+        }
+      ],
+      "relationships": [],
+      "details": [
+        {
+          "entity": "John Doe",
+          "detail": "Works at Google."
+        }
+      ]
+    }
+  },
+  {
+    "episode_id": 1,
+    "timestamp_start": 300,
+    "timestamp_end": 600,
+    "analysis": {
+      "entities": [
+        {
+          "name": "Jane Smith",
+          "type": "Person",
+          "summary": "A project manager."
+        }
+      ],
+      "relationships": [
+        {
+          "source": "John Doe",
+          "target": "Jane Smith",
+          "description": "Works with"
+        }
+      ],
+      "details": [
+        {
+          "entity": "Jane Smith",
+          "detail": "Manages the project John Doe is working on."
+        }
+      ]
+    }
+  }
+]

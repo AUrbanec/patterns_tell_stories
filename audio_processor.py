@@ -43,7 +43,7 @@ class AudioProcessor:
         try:
             # Upload the audio chunk to Gemini Files API
             print(f"Uploading audio chunk: {audio_chunk_path}")
-            audio_file = genai.files.upload_file(
+            audio_file = genai.upload_file(
                 path=audio_chunk_path,
                 display_name=os.path.basename(audio_chunk_path)
             )

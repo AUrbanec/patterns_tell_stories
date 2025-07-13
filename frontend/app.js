@@ -123,13 +123,11 @@ class PodcastMapper {
                 {
                     selector: 'edge',
                     style: {
-                        'width': 2,
-                        'line-color': '#ccc',
-                        'target-arrow-color': '#ccc',
+                        'width': 4,
+                        'line-color': '#888',
+                        'target-arrow-color': '#888',
                         'target-arrow-shape': 'triangle',
-                        'curve-style': 'taxi',
-                        'taxi-direction': 'horizontal',
-                        'taxi-turn': '20px',
+                        'curve-style': 'bezier',
                         'label': 'data(label)',
                         'font-size': '10px',
                         'text-rotation': 'autorotate',
@@ -143,13 +141,23 @@ class PodcastMapper {
                         'border-width': 3,
                         'border-color': '#667eea'
                     }
+                },
+                {
+                    selector: '.highlighted',
+                    style: {
+                        'background-color': '#667eea',
+                        'line-color': '#667eea',
+                        'target-arrow-color': '#667eea',
+                        'transition-property': 'background-color, line-color, target-arrow-color',
+                        'transition-duration': '0.2s'
+                    }
                 }
             ],
             
             layout: {
                 name: 'dagre',
                 padding: 30,
-                spacingFactor: 1.25,
+                spacingFactor: 1.75,
                 fit: true,
                 padding: 30,
                 randomize: false,
@@ -169,6 +177,16 @@ class PodcastMapper {
         this.cy.on('tap', 'node', (evt) => {
             const node = evt.target;
             this.showEntityDetails(node.data());
+
+            this.cy.elements().removeClass('highlighted');
+            node.addClass('highlighted');
+            node.neighborhood().addClass('highlighted');
+        });
+
+        this.cy.on('tap', (evt) => {
+            if (evt.target === this.cy) {
+                this.cy.elements().removeClass('highlighted');
+            }
         });
     }
     

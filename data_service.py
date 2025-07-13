@@ -76,36 +76,33 @@ class DataService:
         self.db.refresh(relationship)
         return relationship
     
-    def process_analysis_chunk(self, analysis_result: Dict[str, Any]):
-        """Process a single analysis result and store in database."""
-        episode_id = analysis_result["episode_id"]
-        timestamp_start = analysis_result["timestamp_start"]
-        timestamp_end = analysis_result["timestamp_end"]
-        analysis = analysis_result["analysis"]
+    def process_refined_analysis(self, episode_id: int, refined_analysis: Dict[str, Any]):
+        """
+        Process the final, refined analysis for an entire episode and store it.
+        """
+        print(f"Storing refined analysis for episode {episode_id}")
+
+        # Create a single source for the entire episode's refined analysis
+        source = self.create_source(
+            episode_id=episode_id,
+            timestamp_start=0,
+            timestamp_end=0,  # Indicates full episode context
+            transcript_snippet="Refined analysis from full episode."
+        )
         
-        # Debug: Print what we received
-        print(f"Processing chunk {timestamp_start}-{timestamp_end}s")
-        print(f"Entities found: {len(analysis.get('entities', []))}")
-        print(f"Relationships found: {len(analysis.get('relationships', []))}")
-        print(f"Details found: {len(analysis.get('details', []))}")
-        
-        # Create source record with analysis summary as transcript snippet
-        transcript_snippet = f"Analysis: {len(analysis.get('entities', []))} entities, {len(analysis.get('relationships', []))} relationships"
-        source = self.create_source(episode_id, timestamp_start, timestamp_end, transcript_snippet)
-        
-        # Process entities
+        # Process entities from the refined analysis
         entity_map = {}
-        for entity_data in analysis.get("entities", []):
+        for entity_data in refined_analysis.get("entities", []):
             entity = self.get_or_create_entity(
                 name=entity_data["name"],
                 entity_type=entity_data["type"],
                 summary=entity_data.get("summary")
             )
             entity_map[entity_data["name"]] = entity
-        
-        # Process details
-        for detail_data in analysis.get("details", []):
-            entity_name = detail_data["entity"]
+
+        # Process details from the refined analysis
+        for detail_data in refined_analysis.get("details", []):
+            entity_name = detail_data.get("entity")
             if entity_name in entity_map:
                 self.create_detail(
                     entity_id=entity_map[entity_name].id,
@@ -113,10 +110,10 @@ class DataService:
                     source_id=source.id
                 )
         
-        # Process relationships
-        for rel_data in analysis.get("relationships", []):
-            source_name = rel_data["source"]
-            target_name = rel_data["target"]
+        # Process relationships from the refined analysis
+        for rel_data in refined_analysis.get("relationships", []):
+            source_name = rel_data.get("source")
+            target_name = rel_data.get("target")
             
             if source_name in entity_map and target_name in entity_map:
                 self.create_relationship(
